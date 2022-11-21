@@ -24,6 +24,22 @@ from collections import Counter
 import importlib.resources
 
 
+
+from selenium import webdriver
+
+from selenium.webdriver.common.by import By
+
+import time
+
+
+
+username = "Enter username on line 36 of extractor.py"
+
+password = "Enter password on line 38 of extractor.py!"
+
+feedbackDataFrame= pd.DataFrame(columns=["URL","Route Origin","Time Acessed","Message"])
+
+
 class TimetableExtractor:
 
 
@@ -45,6 +61,7 @@ class TimetableExtractor:
         if service_line_level == True:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
+            self.check_for_expired_operators()
         else:
             pass
 
@@ -394,8 +411,13 @@ class TimetableExtractor:
 
             operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
             xml_output.append(operating_period_end_date)
+            
+     ###      
+            #expired=[]
+            #if operating_period_end_date>=date.today():
+             #   xml_output.append(expired)
 
-
+###
             schema_version = xmlDataExtractor.extract_schema_version(xml_data)
             xml_output.append(schema_version)
 
@@ -544,12 +566,200 @@ class TimetableExtractor:
         '''
 
         #conditional logic required, as json cols dont exist if stop_level parameter != True
+
+        
         if self.stop_level == True:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['journey_pattern_json','vehicle_journey_json','services_json','la_code'],axis=1).drop_duplicates()
         else:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'],axis=1).drop_duplicates()
-
         return self.service_line_extract
+
+
+
+#Evaluating if an operating date is expired and returning the boolean value
+
+  
+    def expiredStatus(value, OperatingPeriodEndDate, today):
+        
+            expValue=False
+            
+            if OperatingPeriodEndDate>=today:
+                expValue=False
+                                       
+                                       
+            elif OperatingPeriodEndDate<today:
+                expValue=True
+                                       
+            else:
+                print("Unknown")
+            
+            return(expValue)
+            
+#Creating a list showing if the boolean values are expired
+#Adding this list to the end of the dataframe
+            
+    def check_for_expired_operators(self):
+        
+        expiredFlag = []
+        
+        #convert operating date
+        if self.service_line_level == True:
+            for value in self.service_line_extract['OperatingPeriodEndDate']:
+                if value==None:
+                    expiredFlag.append("No End Date")
+                    continue
+                
+                #Clean Operating Period Date    
+                OperatingPeriodEndDate= datetime.datetime.strptime(value,"%Y-%m-%d")
+                OperatingPeriodEndDate=OperatingPeriodEndDate.strftime("%Y-%m-%d")   
+                    
+                #Clean Today's Date
+                today=datetime.datetime.now()
+                today=today.strftime("%Y-%m-%d")
+                
+                    
+                expiredFlag.append(TimetableExtractor.expiredStatus(value,OperatingPeriodEndDate,today))
+                    
+        self.service_line_extract["Expired_Operator"] = expiredFlag
+        
+        TimetableExtractor.checkExpiredFlag(self)
+                            
+        return self.service_line_extract , OperatingPeriodEndDate, today
+
+
+#Checks if feedback has already been sent by crosschecking URL in current Feedback DataFrame
+#Determines if we need to send a notification based on the time since
+
+
+    def feedbackLog(current_Url,current_Origin):
+        
+        
+        
+        print("CHECKING CURRENT URL VS IN TABLE URL")
+        
+        print(current_Url)
+
+    
+        if current_Url in feedbackDataFrame["URL"].values:
+            
+            indexd= list(feedbackDataFrame["URL"].values).index(current_Url)
+            
+            dateTimeforURL = feedbackDataFrame["Time Acessed"].iloc[indexd]
+            
+            
+            #dateTimeforURL= datetime.datetime.strptime(dateTimeforURL,'%Y-%m-%d %H:%M:%S.%f')
+                  
+                 
+            print((datetime.datetime.now()-dateTimeforURL).days)
+            
+    
+            if ((datetime.datetime.now()-dateTimeforURL).days)>6 and current_Origin in feedbackDataFrame["Route Origin"].values :
+    
+                
+                
+                TimetableExtractor.sendNotification(current_Url, current_Origin, username, password)
+                
+                print("need to send feedback because feedback has expired")
+                
+            elif ((datetime.datetime.now()-dateTimeforURL).days)>6 and current_Origin not in feedbackDataFrame["Route Origin"].values :
+                
+                TimetableExtractor.sendNotification(current_Url, current_Origin, username, password)
+                
+                print("Feedback needed because we haven't sent feedback for this origin yet")    
+            
+            
+            else:
+                print("Don't send anything")
+                
+        else:
+            TimetableExtractor.sendNotification(current_Url, current_Origin, username, password)
+            print("need to send feedback because no existing feedback")
+            
+            print(datetime.datetime.now())
+        
+    
+
+
+
+
+    def sendNotification(current_Url, current_Origin, username, password):
+        
+        
+        message= "Update Your data please, we have noticed it has expired for your service originating at ", current_Origin
+      
+
+        
+        #Install web Driver and add installation file path within brackets below
+        #Link for edge browser
+        #https://msedgedriver.azureedge.net/107.0.1418.42/edgedriver_win64.zip
+        
+        driver= webdriver.Edge(r"enter file path here")
+    
+    
+        driver.get(current_Url)
+    
+    
+        login= driver.find_element( By.NAME, "login")
+    
+        login.send_keys(username)
+    
+        loginPassword= driver.find_element( By.NAME, "password")
+    
+        loginPassword.send_keys(password)
+    
+        driver.find_element(By.NAME,"submit" ).click()
+        
+        time.sleep(1)
+    
+    
+    
+        feedback= driver.find_element( By.NAME,'feedback')
+    
+        feedback.send_keys(message)
+        
+        time.sleep(1)
+        
+        feedbackDataFrame.loc[len(feedbackDataFrame.index)]=[current_Url, current_Origin, datetime.datetime.now(), message]
+        
+        #driver.find_element(By.CLASS_NAME,"govuk-button" ).click()
+
+    
+    def checkExpiredFlag(self):
+    
+        count=0
+        listofURLS=[]
+        listofOrigins=[]
+        
+        for value in self.service_line_extract['URL']:
+            stripped_value=value.strip('/download')
+            stripped_value=stripped_value+"/feedback"
+            listofURLS.append(stripped_value)
+            
+        for origin in self.service_line_extract['Origin']:
+            listofOrigins.append(origin)
+            
+            
+        
+        for value in self.service_line_extract['Expired_Operator']:
+            if value== True:
+        
+                print("send message to ...")
+                current_Url= listofURLS[count]
+                print(current_Url)
+                current_Origin=listofOrigins[count]
+                
+                TimetableExtractor.feedbackLog(current_Url,current_Origin)
+        
+                count=count+1
+                continue
+            
+            count=count+1
+    
+
+
+
+
+
 
 
     def zip_or_xml(self, extension, url):
@@ -1299,6 +1509,20 @@ class TimetableExtractor:
         print(*datasets, sep = ', ')
 
         return red_score
+    
+    #############
+    def expired_operators(self):
+        '''returns total amount of expired operators'''
+        
+        operator_expired= self.metadata.query('operating_period_end_date'>=date.today())
+        
+        expireCount=operator_expired['operator_name'].unique()
+        
+        print('Number of expired Operators')
+        print(expireCount)
+        
+        return operator_expired
+###############    
 
 
     def dq_less_than_x(self, score):
@@ -1938,14 +2162,8 @@ class xmlDataExtractor:
         operating_period_end_date = [i.text if len(i.text) >0 else 'No Data' for i in data]
         
         return operating_period_end_date
-
-        #returns 'no data' if this is blank as many are empty
-        #if len(operating_period_end_date) > 0:
-            
-            #return operating_period_end_date
-        
-        #else:
-            #return ['No Data']
+    
+             
        
     def extract_schema_version(self):
         
@@ -1998,6 +2216,29 @@ class xmlDataExtractor:
         return unique_atco_first_3_letters
 
 
-    
+
+
+#################testing on all datasets
+#enter api key below
+
+
+
+#my_bus_data_object = TimetableExtractor(api_key="enter api key here",
+                                       # limit=1
+                                        # Your API Key Here
+                                  # How many datasets to view
+                                 # ,status = 'published' # Only view published datasets
+                                 # ,service_line_level=True # True if you require Service line data 
+                                 # ,stop_level=False # True if you require stop level data
+                                 # )
+
+#save the extracted dataset level data to filtered_dataset_level variable
+#filtered_dataset_level = my_bus_data_object.metadata
+
+#save the extracted service line level data to dataset_level variable
+#filtered_service_line_level = my_bus_data_object.service_line_extract
+
+#export to csv if you wish to save this data
+#filtered_service_line_level.to_csv('all_sevice_line.csv')
 
 
