@@ -336,7 +336,7 @@ def sendsomething(data_for_url):
             
             # location of selenium web driver- install based on your browser and add your own installation location here...
             
-            driver= webdriver.Edge(r"C:\Users\aakram7\OneDrive - KPMG\Documents\My Office Files\BODS Python\bods-dasta-extractor-operating period expired\edge")
+            driver= webdriver.Edge(r"C:PATH OF INSTALATION LOCATION OF DRIVER")
 
 
             driver.get(urltosend)
