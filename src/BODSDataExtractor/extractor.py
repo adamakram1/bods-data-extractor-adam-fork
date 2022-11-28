@@ -25,21 +25,6 @@ import importlib.resources
 
 
 
-from selenium import webdriver
-
-from selenium.webdriver.common.by import By
-
-import time
-
-
-
-username = "Enter username on line 36 of extractor.py"
-
-password = "Enter password on line 38 of extractor.py!"
-
-feedbackDataFrame= pd.DataFrame(columns=["URL","Route Origin","Time Acessed","Message"])
-
-
 class TimetableExtractor:
 
 
@@ -574,9 +559,7 @@ class TimetableExtractor:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'],axis=1).drop_duplicates()
         return self.service_line_extract
 
-
-
-#Evaluating if an operating date is expired and returning the boolean value
+#Evaluating if an operating date is expired
 
   
     def expiredStatus(value, OperatingPeriodEndDate, today):
@@ -595,8 +578,7 @@ class TimetableExtractor:
             
             return(expValue)
             
-#Creating a list showing if the boolean values are expired
-#Adding this list to the end of the dataframe
+#Adding Boolean to dataframe
             
     def check_for_expired_operators(self):
         
@@ -622,144 +604,8 @@ class TimetableExtractor:
                     
         self.service_line_extract["Expired_Operator"] = expiredFlag
         
-        TimetableExtractor.checkExpiredFlag(self)
                             
         return self.service_line_extract , OperatingPeriodEndDate, today
-
-
-#Checks if feedback has already been sent by crosschecking URL in current Feedback DataFrame
-#Determines if we need to send a notification based on the time since
-
-
-    def feedbackLog(current_Url,current_Origin):
-        
-        
-        
-        print("CHECKING CURRENT URL VS IN TABLE URL")
-        
-        print(current_Url)
-
-    
-        if current_Url in feedbackDataFrame["URL"].values:
-            
-            indexd= list(feedbackDataFrame["URL"].values).index(current_Url)
-            
-            dateTimeforURL = feedbackDataFrame["Time Acessed"].iloc[indexd]
-            
-            
-            #dateTimeforURL= datetime.datetime.strptime(dateTimeforURL,'%Y-%m-%d %H:%M:%S.%f')
-                  
-                 
-            print((datetime.datetime.now()-dateTimeforURL).days)
-            
-    
-            if ((datetime.datetime.now()-dateTimeforURL).days)>6 and current_Origin in feedbackDataFrame["Route Origin"].values :
-    
-                
-                
-                TimetableExtractor.sendNotification(current_Url, current_Origin, username, password)
-                
-                print("need to send feedback because feedback has expired")
-                
-            elif ((datetime.datetime.now()-dateTimeforURL).days)>6 and current_Origin not in feedbackDataFrame["Route Origin"].values :
-                
-                TimetableExtractor.sendNotification(current_Url, current_Origin, username, password)
-                
-                print("Feedback needed because we haven't sent feedback for this origin yet")    
-            
-            
-            else:
-                print("Don't send anything")
-                
-        else:
-            TimetableExtractor.sendNotification(current_Url, current_Origin, username, password)
-            print("need to send feedback because no existing feedback")
-            
-            print(datetime.datetime.now())
-        
-    
-
-
-
-
-    def sendNotification(current_Url, current_Origin, username, password):
-        
-        
-        message= "Update Your data please, we have noticed it has expired for your service originating at ", current_Origin
-      
-
-        
-        #Install web Driver and add installation file path within brackets below
-        #Link for edge browser
-        #https://msedgedriver.azureedge.net/107.0.1418.42/edgedriver_win64.zip
-        
-        driver= webdriver.Edge(r"enter file path here")
-    
-    
-        driver.get(current_Url)
-    
-    
-        login= driver.find_element( By.NAME, "login")
-    
-        login.send_keys(username)
-    
-        loginPassword= driver.find_element( By.NAME, "password")
-    
-        loginPassword.send_keys(password)
-    
-        driver.find_element(By.NAME,"submit" ).click()
-        
-        time.sleep(1)
-    
-    
-    
-        feedback= driver.find_element( By.NAME,'feedback')
-    
-        feedback.send_keys(message)
-        
-        time.sleep(1)
-        
-        feedbackDataFrame.loc[len(feedbackDataFrame.index)]=[current_Url, current_Origin, datetime.datetime.now(), message]
-        
-        #driver.find_element(By.CLASS_NAME,"govuk-button" ).click()
-
-    
-    def checkExpiredFlag(self):
-    
-        count=0
-        listofURLS=[]
-        listofOrigins=[]
-        
-        for value in self.service_line_extract['URL']:
-            stripped_value=value.strip('/download')
-            stripped_value=stripped_value+"/feedback"
-            listofURLS.append(stripped_value)
-            
-        for origin in self.service_line_extract['Origin']:
-            listofOrigins.append(origin)
-            
-            
-        
-        for value in self.service_line_extract['Expired_Operator']:
-            if value== True:
-        
-                print("send message to ...")
-                current_Url= listofURLS[count]
-                print(current_Url)
-                current_Origin=listofOrigins[count]
-                
-                TimetableExtractor.feedbackLog(current_Url,current_Origin)
-        
-                count=count+1
-                continue
-            
-            count=count+1
-    
-
-
-
-
-
 
 
     def zip_or_xml(self, extension, url):
@@ -2214,6 +2060,7 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
+
 
 
 
