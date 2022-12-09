@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Created on Thu Nov 17 09:05:00 2022
 
@@ -30,24 +31,35 @@ from BODSDataExtractor.otc_db_download import fetch_otc_db
 otc=fetch_otc_db()
 
 
-
 #bring in an extract
 
-test_xml_table = pd.DataFrame(columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','journey_pattern_json'] )
-
-test_xml_table['URL']=['https://data.test.bus-data.dft.gov.uk/timetable/dataset/102/download/','https://data.test.bus-data.dft.gov.uk/timetable/dataset/102/download/', 'https://data.test.bus-data.dft.gov.uk/timetable/dataset/324/download/', 'https://data.test.bus-data.dft.gov.uk/timetable/dataset/1014/download/','https://data.test.bus-data.dft.gov.uk/timetable/dataset/1006/download/', 'https://data.test.bus-data.dft.gov.uk/timetable/dataset/913/download/', 'https://data.test.bus-data.dft.gov.uk/timetable/dataset/950/download/']
-
-test_xml_table['Expired_Operator']=[True,True,False,False, "No End Date", True, True]
-
-test_xml_table["Origin"]=["Eton","Bilton Circular", "Harrogate", "Harrow", "Iran", "England", "Pateley Bridge"]
-
-test_xml_table['ServiceCode']=["PBBBBBB","PB0001748:116","PB0001748:116","PB0001748:116","PB0001748:140","PB0001748:350","PH0000132:3"]
-
-test_xml_table['LineName']=[300, 400,500,600,700,600,900]
 
 
 
-#USING A SERVICE LINE EXTRACT LOCALLY
+
+
+##--------------------USING A SERVICE LINE EXTRACT LOCALLY-------------
+
+# test_xml_table = pd.DataFrame(columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','journey_pattern_json'] )
+
+# test_xml_table['URL']=['https://data.test.bus-data.dft.gov.uk/timetable/dataset/102/download/','https://data.test.bus-data.dft.gov.uk/timetable/dataset/102/download/', 'https://data.test.bus-data.dft.gov.uk/timetable/dataset/324/download/', 'https://data.test.bus-data.dft.gov.uk/timetable/dataset/1014/download/','https://data.test.bus-data.dft.gov.uk/timetable/dataset/1006/download/', 'https://data.test.bus-data.dft.gov.uk/timetable/dataset/913/download/', 'https://data.test.bus-data.dft.gov.uk/timetable/dataset/950/download/']
+
+# test_xml_table['Expired_Operator']=[True,True,False,False, "No End Date", True, True]
+
+# test_xml_table["Origin"]=["Eton","Bilton Circular", "Harrogate", "Harrow", "Iran", "England", "Pateley Bridge"]
+
+# test_xml_table['ServiceCode']=["PBBBBBB","PB0001748:116","PB0001748:116","PB0001748:116","PB0001748:140","PB0001748:350","PH0000132:3"]
+
+# test_xml_table['LineName']=[300, 400,500,600,700,600,900]
+
+#----------FUTURE PLANS---------
+#write email to agent
+#which local authority is responsible
+#is the LTA in a position to add to POWEES
+#missing lines
+#---------------------------
+
+test_data_frame=pd.read_excel("mock data.xlsx")
 
 
 
@@ -56,7 +68,7 @@ test_xml_table['LineName']=[300, 400,500,600,700,600,900]
 
 # enter username below after "=" as string ('')
 
-Username=os.environ.get("Username")
+Username=os.environ.get("Username_for_BODS")
 
 #password =
 
@@ -158,7 +170,7 @@ def feedbackLog(current_Url,current_Origin, CurrentLineName, CurrentServiceCode,
             print("need to send feedback because feedback has expired for this service code")
             
            
-         #Checking if feedback has been sent more than 6 days ago and this route origin is not already in our feedback dataframe
+         #Checking if feedback has been sent more than 6 days ago and this service code is not already in our feedback dataframe
          
         elif ((datetime.now()-dateTimeforURL).days)>6 and CurrentServiceCode not in feedbackDataFrame["ServiceCode"].values :
             
@@ -199,11 +211,6 @@ def sendNotification(current_Url, current_Origin, CurrentLineName, CurrentServic
     #loops_for_rows=0
     for urls in data_for_url:
 
-          
-        
-        
-        
-        
         for item in urls:
 
             
@@ -214,8 +221,6 @@ def sendNotification(current_Url, current_Origin, CurrentLineName, CurrentServic
                 data_for_url[index].append(current_Origin)
                 count+=1
                 
-                
-                
                 #sendsomething(data_for_url)
                 
                 continue
@@ -223,26 +228,26 @@ def sendNotification(current_Url, current_Origin, CurrentLineName, CurrentServic
             
      # add on to url data row that is already in data_for_url list           
             
-            elif item==current_Url and count>1:
+            # elif item==current_Url and count>1:
                 
-                print("doing this")
+            #     print("doing this")
                 
-                index=index-1
-                data_for_url[index].append(CurrentServiceCode)
-                data_for_url[index].append(CurrentLineName)
-                data_for_url[index].append(current_Origin)
+            #     index=index-1
+            #     data_for_url[index].append(CurrentServiceCode)
+            #     data_for_url[index].append(CurrentLineName)
+            #     data_for_url[index].append(current_Origin)
                 
-                continue
+            #     continue
 
 
     
     #we only send this list to the next function once we have looked at all rows in the dataframe
     
     
-    if len(data_for_url)==len(data_added):
-        sendsomething(data_for_url)   
+    # if len(data_for_url)==len(data_added):
+    #     sendsomething(data_for_url)   
         
-    return data_for_url
+    #return data_for_url
 
 
 
@@ -295,17 +300,35 @@ def sendsomething(data_for_url):
                 subtractorb=3
                 subtractorc=4
                 
+                #check is determining how many groups of route origin/ service code/ line number combinations we have
                 check=int(value/3)
                 
                 for index in range(check):
                     
                     #add details to feedback datframe to keep track of messages
                     
-                    feedbackDataFrame.loc[len(feedbackDataFrame.index)]=[result[0], result[value-subtractorb], result[value-subtractorc], result[value-subtractor], datetime.now(), message]
+                    if value-subtractorb==0:
+                        feedbackDataFrame.loc[len(feedbackDataFrame.index)]=[result[0], result[value-subtractorb-1], result[value-subtractorc-1], result[value-subtractor], datetime.now(), message]
+                        
+                    else:
+                        feedbackDataFrame.loc[len(feedbackDataFrame.index)]=[result[0], result[value-subtractorb], result[value-subtractorc], result[value-subtractor], datetime.now(), message]
                     
-                    subtractor=subtractor+3
-                    subtractorb=subtractorb+4
-                    subtractorc=subtractorc+4
+                    
+                    
+                    #print(result[0],result[value-subtractorb],result[value-subtractorc],result[value-subtractor],datetime.now(),"message")
+                    # print(value)
+                    # print(subtractor)
+                    # print(subtractorb)
+                    # print(subtractorc)
+                    
+                    #feedbackDataFrame.loc[len(feedbackDataFrame.index)]=[result[0], result[value-subtractorb], result[value-subtractorc], result[value-subtractor], datetime.now(), message]
+                    
+                    subtractor+=3
+                    subtractorb+=3
+                    subtractorc+=3
+                    
+                    
+                        
                     
                     
                     
@@ -335,9 +358,9 @@ def sendsomething(data_for_url):
             
             
             # location of selenium web driver- install based on your browser and add your own installation location here...
+            path=os.environ.get("path_for_selenium")
             
-            driver= webdriver.Edge(r"C:PATH OF INSTALATION LOCATION OF DRIVER")
-
+            driver= webdriver.Edge(r"C:\Users\aakram7\OneDrive - KPMG\Documents\My Office Files\BODS Python Rough Work\bods-data-extractor-operating period expired\edge")
 
             driver.get(urltosend)
 
@@ -368,7 +391,10 @@ def sendsomething(data_for_url):
 def checkExpiredFlag():
     
     '''Takes key information from the service extract dataframe and iterates it to appropriately named lists'''
-
+    
+    
+    #Change selected collumns into lists from data frame
+    
     count=0
     listofURLS=[]
     listofOrigins=[]
@@ -380,8 +406,10 @@ def checkExpiredFlag():
     #Makes a note of all the datasets looked at in the code
     data_added=[]
     
+    
+    
     #Changing the url from the service extract database so we can go straight to the feedback page
-    for value in test_xml_table['URL']:
+    for value in test_data_frame['URL']:
         stripped_value=value.strip('/download')
         stripped_value=stripped_value+"/feedback"
    
@@ -392,16 +420,24 @@ def checkExpiredFlag():
     
 
     #list of lists created to keep dataset information together
+    
+    
     for url in listofURLS:
             data_for_url.append([url]) 
-        
-    for origin in test_xml_table['Origin']:
+      
+     #listoforigins=[test_data_frame('Origin')]  #efficency
+      
+    for origin in test_data_frame['Origin']:
         listofOrigins.append(origin)
-        
-    for service_code in test_xml_table['ServiceCode']:
+    
+    # listofServiceCodes =[test_data_frame('ServiceCode')]
+    
+    for service_code in test_data_frame['ServiceCode']:
         listofServiceCodes.append(service_code)
-        
-    for line_name in test_xml_table["LineName"]:
+    
+    #listofLineNames =[test_data_frame('LineName')]  
+    
+    for line_name in test_data_frame["LineName"]:
         listofLineNames.append(line_name)
         
     
@@ -410,11 +446,14 @@ def checkExpiredFlag():
     #for every row in dataframe
     
     
-    for value in test_xml_table['Expired_Operator']:
+    for value in test_data_frame['Expired_Operator']:
         
-        data_added.append("operator")
+        data_added.append(value)
         
         if value== True:
+            
+            #data_added.append(value)
+            
             
             
             #If the expired operator status is true, we make a note of the below information associated with it's index
@@ -429,15 +468,37 @@ def checkExpiredFlag():
             feedbackLog(current_Url,current_Origin, CurrentLineName, CurrentServiceCode, Username, password, data_for_url,data_added)
             
     
-            count=count+1
+            count+=1
             
             continue
         
-        count=count+1
+        elif value==False or value=="No End Date":
+            
+            print("False or No End Date")
+            
+            
+            
+            #data_added.append(value)
+            
+        else:
+            print("Unrecognised Expired Flag")
+            
+            
+            continue
+        
+        if len(data_for_url)==len(data_added):
+            sendsomething(data_for_url)   
+            
+            continue
+        
+        count+=1
         
 
 
 
 checkExpiredFlag()  
 
-# print(test_xml_table['URL'][count])
+# print(test_data_frame['URL'][count])
+
+
+
